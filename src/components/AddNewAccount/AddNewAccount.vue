@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import "./AddNewAccount.css";
 import { Plus } from "@element-plus/icons-vue";
-import { useAccountStore } from "../stores/accounts";
+import { useAccountStore } from "../../stores/accounts";
 
 const accountStore = useAccountStore();
 

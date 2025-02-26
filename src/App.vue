@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import AddNewAccount from "./components/AddNewAccount.vue";
+import "./assets/App.css";
+import AddNewAccount from "./components/AddNewAccount/AddNewAccount.vue";
+import Alert from "./components/Alert/Alert.vue";
 </script>
 
 <template>
-  <AddNewAccount />
+  <div class="app__content">
+    <AddNewAccount />
+    <Alert />
+  </div>
 </template>
