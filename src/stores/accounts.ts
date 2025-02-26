@@ -33,7 +33,7 @@ export const useAccountStore = defineStore("account", () => {
       password: "",
     };
 
-    return [...accounts.value, newAccount];
+    accounts.value = [...accounts.value, newAccount];
   }
 
   function onChangeField(
@@ -49,7 +49,7 @@ export const useAccountStore = defineStore("account", () => {
   }
 
   function saveAccount(state: IAccount) {
-    return accounts.value.map((account) => {
+    accounts.value = accounts.value.map((account) => {
       if (account.id === state.id) {
         if (state.type === AccountType.LDAP) {
           return { ...state, password: null };
@@ -62,7 +62,7 @@ export const useAccountStore = defineStore("account", () => {
   }
 
   function deleteAccount(id: string) {
-    return accounts.value.filter((account) => account.id !== id);
+    accounts.value = accounts.value.filter((account) => account.id !== id);
   }
 
   return { accounts, addNewAccount, deleteAccount, saveAccount, onChangeField };
