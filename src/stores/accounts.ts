@@ -1,69 +1,74 @@
 import { defineStore } from "pinia";
-import { ref } from "vue";
+import { ref, watch } from "vue";
 
 interface IMark {
   text: string;
 }
 
-enum AccountType {
+export enum AccountType {
   LOCAL = "Локальная",
   LDAP = "LDAP",
 }
 
-type AccountFieldKey = "login" | "password";
-
-interface IAccount {
+export interface IAccount {
   id: string;
   mark: IMark[];
   type: AccountType;
   login: string;
-  password: null | string;
+  password: string;
 }
 
-export const useAccountStore = defineStore("account", () => {
-  const accounts = ref<IAccount[]>([]);
+const LOCAL_STORAGE_KEY = "state";
+const data = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || "[]");
+
+export const useAccountStore = defineStore("accountStore", () => {
+  const accounts = ref<IAccount[]>(data);
 
   function addNewAccount() {
     const id = crypto.randomUUID();
     const newAccount: IAccount = {
       id,
-      mark: [],
+      mark: [{ text: "" }],
       type: AccountType.LOCAL,
       login: "",
       password: "",
     };
 
-    accounts.value = [...accounts.value, newAccount];
-  }
-
-  function onChangeField(
-    id: string,
-    nameField: AccountFieldKey,
-    value: string
-  ) {
-    const account = accounts.value.find((account) => account.id === id);
-
-    if (account) {
-      account[nameField] = value;
-    }
-  }
-
-  function saveAccount(state: IAccount) {
-    accounts.value = accounts.value.map((account) => {
-      if (account.id === state.id) {
-        if (state.type === AccountType.LDAP) {
-          return { ...state, password: null };
-        }
-        return state;
-      }
-
-      return account;
-    });
+    accounts.value.push(newAccount);
   }
 
   function deleteAccount(id: string) {
-    accounts.value = accounts.value.filter((account) => account.id !== id);
+    const index = accounts.value.findIndex((account) => account.id === id);
+    if (index !== -1) {
+      accounts.value.splice(index, 1);
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(accounts.value));
+    }
   }
 
-  return { accounts, addNewAccount, deleteAccount, saveAccount, onChangeField };
+  const saveData = () => {
+    const newAccounts = accounts.value.map((account) => {
+      const mark = account.mark.map((item) => item.text).join("; ");
+      return { ...account, mark };
+    });
+
+    const validAccounts = newAccounts.filter(
+      (account) =>
+        account.mark && account.type && account.login && account.password
+    );
+
+    const normalizeAccounts = accounts.value.filter((account) =>
+      validAccounts.some((newAccount) => newAccount.id === account.id)
+    );
+
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(normalizeAccounts));
+  };
+
+  watch(accounts, saveData, { deep: true });
+
+  return {
+    accounts,
+    addNewAccount,
+    deleteAccount,
+    saveData,
+  };
 });
