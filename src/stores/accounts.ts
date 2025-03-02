@@ -1,7 +1,8 @@
+import { getMarkAsString, parseMarks } from "@/helpers/parseMarks";
 import { defineStore } from "pinia";
 import { ref, watch } from "vue";
 
-interface IMark {
+export interface IMark {
   text: string;
 }
 
@@ -15,7 +16,7 @@ export interface IAccount {
   mark: IMark[];
   type: AccountType;
   login: string;
-  password: string;
+  password: null | string;
 }
 
 const LOCAL_STORAGE_KEY = "state";
@@ -45,23 +46,27 @@ export const useAccountStore = defineStore("accountStore", () => {
     }
   }
 
-  const saveData = () => {
+  function saveData() {
     const newAccounts = accounts.value.map((account) => {
-      const mark = account.mark.map((item) => item.text).join("; ");
-      return { ...account, mark };
+      const markAsString = getMarkAsString(account.mark);
+      const parseMark = parseMarks(markAsString, ";");
+
+      if (account.type === AccountType.LDAP) {
+        return { ...account, mark: parseMark, password: null };
+      }
+
+      return { ...account, mark: parseMark };
     });
 
-    const validAccounts = newAccounts.filter(
-      (account) =>
-        account.mark && account.type && account.login && account.password
-    );
+    const validAccounts = newAccounts.filter((account) => {
+      if (account.type === AccountType.LDAP) {
+        return account.login;
+      }
+      return account.login && account.password;
+    });
 
-    const normalizeAccounts = accounts.value.filter((account) =>
-      validAccounts.some((newAccount) => newAccount.id === account.id)
-    );
-
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(normalizeAccounts));
-  };
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(validAccounts));
+  }
 
   watch(accounts, saveData, { deep: true });
 
