@@ -1,5 +1,6 @@
 <template>
   <el-input
+    :class="isError && 'red'"
     v-model="passwordValue"
     :type="isVisible ? 'text' : 'password'"
     placeholder="Введите пароль"
@@ -16,7 +17,11 @@
 import { ref, defineProps, defineEmits, watch } from "vue";
 import { View, Hide } from "@element-plus/icons-vue";
 
-const { modelValue } = defineProps<{ modelValue: string | null }>();
+const { modelValue, isError } = defineProps<{
+  modelValue: string | null;
+  isError: boolean;
+}>();
+
 const emit = defineEmits<{ (e: "update:modelValue", value: string): void }>();
 
 const passwordValue = ref(modelValue);
@@ -41,6 +46,10 @@ watch(
 </script>
 
 <style scoped>
+:deep(.red .el-input__wrapper) {
+  border: 1px solid rgb(218, 60, 60);
+}
+
 .icon {
   cursor: pointer;
 }

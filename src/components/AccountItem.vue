@@ -3,10 +3,14 @@
     <td>
       <div class="column">
         <el-input
+          :class="errors.mark && 'red'"
           placeholder="Значение"
           v-model="markAsString"
           @blur="saveData"
         />
+        <span v-if="errors.mark" class="error">{{
+          errors.mark._errors[0]
+        }}</span>
       </div>
     </td>
 
@@ -26,16 +30,27 @@
     <td :class="isTypeLDAP ? 'full' : 'quarter'">
       <div class="column">
         <el-input
+          :class="errors.login && 'red'"
           placeholder="Значение"
           v-model="reactiveAccount.login"
           @blur="saveData"
         />
+        <span v-if="errors.login" class="error">{{
+          errors.login._errors[0]
+        }}</span>
       </div>
     </td>
 
     <td :class="isTypeLDAP ? 'hidden' : 'quarter'">
       <div class="column">
-        <PasswordInput v-model="account.password" @blur="saveData" />
+        <PasswordInput
+          v-model="account.password"
+          :isError="Boolean(errors.password)"
+          @blur="saveData"
+        />
+        <span v-if="errors.password" class="error">{{
+          errors.password._errors[0]
+        }}</span>
       </div>
     </td>
 
@@ -49,10 +64,11 @@
 
 <script setup lang="ts">
 import "element-plus/dist/index.css";
-import { defineProps, defineEmits, computed, reactive, watch } from "vue";
+import { defineProps, defineEmits, computed, reactive, watch, ref } from "vue";
 import { AccountType, type IAccount } from "@/stores/accounts";
 import { getMarkAsString, parseMarks } from "@/helpers/parseMarks";
 import PasswordInput from "./PasswordInput.vue";
+import { validationSchema } from "@/helpers/validateData";
 
 const { account } = defineProps<{ account: IAccount }>();
 const emits = defineEmits<{
@@ -66,6 +82,7 @@ const typeOptions = [
 ];
 
 let reactiveAccount = reactive<IAccount>(account);
+const errors = ref<{ [key: string]: any }>({});
 const isTypeLDAP = computed(() => reactiveAccount.type === AccountType.LDAP);
 
 const markAsString = computed({
@@ -75,12 +92,26 @@ const markAsString = computed({
   },
 });
 
-const onDelete = () => {
-  emits("deleteAccount", account.id);
+const validateForm = () => {
+  const markAsString = getMarkAsString(reactiveAccount.mark);
+
+  const result = validationSchema.safeParse({
+    ...reactiveAccount,
+    mark: markAsString,
+  });
+  errors.value = result.success ? {} : result.error.format();
 };
 
 const saveData = () => {
-  emits("saveData");
+  validateForm();
+
+  if (Object.keys(errors.value).length === 0) {
+    emits("saveData");
+  }
+};
+
+const onDelete = () => {
+  emits("deleteAccount", account.id);
 };
 
 watch(
@@ -92,6 +123,10 @@ watch(
 </script>
 
 <style scoped>
+:deep(.red .el-input__wrapper) {
+  border: 1px solid rgb(218, 60, 60);
+}
+
 tr {
   width: 100%;
 }
@@ -128,12 +163,21 @@ td:last-child {
 }
 
 .column {
-  margin-top: 5px;
+  position: relative;
+  margin-top: 15px;
   padding-right: 5px;
 }
 
 .button {
   position: relative;
-  z-index: 100;
+  z-index: 10;
+}
+
+.error {
+  position: absolute;
+  bottom: -13px;
+  left: 0;
+  color: rgb(218, 60, 60);
+  font-size: 12px;
 }
 </style>
